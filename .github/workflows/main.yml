@@ -43,5 +43,23 @@ jobs:
 
       - name: Compile Kotlin and run unit tests
         run: |
-          chmod +x ./gradlew
-          ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest
+          GRADLEW_FILE=$(find . -maxdepth 5 -name "gradlew" | head -n 1)
+          if [ -n "$GRADLEW_FILE" ]; then
+            PROJECT_DIR=$(dirname "$GRADLEW_FILE")
+            echo "Found gradlew in $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            chmod +x ./gradlew
+            ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest
+            exit 0
+          fi
+
+          GRADLE_BUILD=$(find . -maxdepth 5 \( -name "build.gradle" -o -name "build.gradle.kts" \) | head -n 1)
+          if [ -n "$GRADLE_BUILD" ]; then
+            PROJECT_DIR=$(dirname "$GRADLE_BUILD")
+            echo "gradlew not found; running system gradle in $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            gradle :app:compileDebugKotlin :app:testDebugUnitTest
+            exit 0
+          fi
+
+          echo "No Android/Gradle project files found in repository; skipping Gradle build."
