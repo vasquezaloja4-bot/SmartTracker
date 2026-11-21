@@ -1,48 +1,34 @@
-app:
-  name: SmartTracker
-  badge: ENTERPRISE TRACKING WORKSPACE
-  platform: Android (Kotlin)
-  backend:
-    database: Cloud Firestore
-    security: Zero-trust Firestore Rules (RBAC anti-escalation, PII isolation)
-    authentication: Google Sign-In
+name: SmartTracker CI
 
-ui_screen:
-  type: Onboarding / Login Screen
-  header_banner:
-    theme: Dark teal / Navy technical grid
-    badge_text: "ENTERPRISE TRACKING WORKSPACE"
-    title: "SmartTracker"
-  body:
-    heading: "Centralized Tracking & Analytics"
-    subtitle: "Sign in with your Google account to sync tracking records, audit logs, role-based dashboards, and exportable reports in real time."
-    features:
-      - icon: analytics_chart
-        text: "Real-time Firestore tracking & chronological history"
-      - icon: file_export
-        text: "Interactive charts & PDF, Excel, and CSV reports"
-      - icon: notifications_clock
-        text: "Automated overdue detection & deadline reminders"
-      - icon: security_shield
-        text: "Role-based access control & zero-trust rules"
-  actions:
-    primary_button:
-      label: "Sign in with Google"
-      style: Solid dark navy pill/rounded button
-      action: trigger_google_oauth
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
-build_and_test_status:
-  firestore_emulator_tests:
-    command: "node --test firestore.test.js"
-    suites_passed: 4
-    coverage:
-      - Unauthenticated denial
-      - RBAC anti-escalation & PII isolation
-      - CRUD, consistency, terminal locking & query alignment
-      - Notifications, immutability & admin config
-  android_build:
-    compile_task: "gradle :app:compileDebugKotlin"
-    unit_tests: "gradle :app:testDebugUnitTest"
-    status: BUILD SUCCESSFUL
-  deployment:
-    rules_deployed: firestore.rules
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Firestore emulator security rules tests
+        run: node --test firestore.test.js
+
+      - name: Compile Kotlin and run unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest
